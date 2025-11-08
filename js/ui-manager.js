@@ -21,37 +21,37 @@ updateStatus: function(message, type = 'info') {
 
     // Inizializza gli elementi DOM
     init: function() {
-        this.elements = {
-            zipFileInput: document.getElementById('zip-file-input'),
-            remoteZipUrl: document.getElementById('remote-zip-url'),
-            loadRemoteZipBtn: document.getElementById('load-remote-zip'),
-            radiusSlider: document.getElementById('radius-slider'),
-            radiusValue: document.getElementById('radius-value'),
-            lineWidthSlider: document.getElementById('line-width-slider'),
-            lineWidthValue: document.getElementById('line-width-value'),
-            searchResults: document.getElementById('search-results'),
-            progressContainer: document.getElementById('progress-container'),
-            progressFill: document.getElementById('progress-fill'),
-            progressText: document.getElementById('progress-text'),
-            commonLinesList: document.getElementById('common-lines-list'),
-            showStartLines: document.getElementById('show-start-lines'),
-            showEndLines: document.getElementById('show-end-lines'),
-            searchButton: document.getElementById('search-button'),
-            resetButton: document.getElementById('reset-button'),
-            unifiedStatus: document.getElementById('unified-status'),
-            statusText : document.getElementById('status-text'),
+    this.elements = {
+        zipFileInput: document.getElementById('zip-file-input'),
+        remoteZipUrl: document.getElementById('remote-zip-url'),
+        loadRemoteZipBtn: document.getElementById('load-remote-zip'),
+        saveLocalZip: document.getElementById('save-local-zip'),
+        radiusSlider: document.getElementById('radius-slider'),
+        radiusValue: document.getElementById('radius-value'),
+        lineWidthSlider: document.getElementById('line-width-slider'),
+        lineWidthValue: document.getElementById('line-width-value'),
         startAddress: document.getElementById('start-address'),
         endAddress: document.getElementById('end-address'),
         searchStartAddress: document.getElementById('search-start-address'),
         searchEndAddress: document.getElementById('search-end-address'),
         startAddressResults: document.getElementById('start-address-results'),
         endAddressResults: document.getElementById('end-address-results'),
+        searchButton: document.getElementById('search-button'),
+        resetButton: document.getElementById('reset-button'),
+        showStartLines: document.getElementById('show-start-lines'),
+        showEndLines: document.getElementById('show-end-lines'),
+        unifiedStatus: document.getElementById('unified-status'),
+        statusText: document.getElementById('status-text'),
+        searchResults: document.getElementById('search-results'),
+        commonLinesList: document.getElementById('common-lines-list'),
+        progressContainer: document.getElementById('progress-container'),
+        progressFill: document.getElementById('progress-fill'),
+        progressText: document.getElementById('progress-text'),
         downloadProgressContainer: document.getElementById('download-progress-container'),
         downloadProgressFill: document.getElementById('download-progress-fill'),
         downloadProgressText: document.getElementById('download-progress-text'),
-        saveLocalZip: document.getElementById('save-local-zip')
-
-        };
+        toggleResults: document.getElementById('toggle-results')
+    };
 
         this.setupEventListeners();
     },
