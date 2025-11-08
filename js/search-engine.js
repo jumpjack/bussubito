@@ -1,58 +1,90 @@
 // Modulo per la ricerca e il disegno delle linee
 const SearchEngine = {
     // Trova e disegna le linee in comune
-    findCommonBusLines: function() {
-        if (Object.keys(APP_STATE.data.allShapes).length === 0) {
-            UIManager.updateStatus("File shapes.txt non trovato nel ZIP", "error");
-            return;
-        }
+// Trova e disegna le linee in comune
+findCommonBusLines: function() {
+    if (Object.keys(APP_STATE.data.allShapes).length === 0) {
+        UIManager.updateStatus("File shapes.txt non trovato nel ZIP", "error");
+        return;
+    }
 
-        UIManager.showProgress(true, "Ricerca linee in comune...");
+    UIManager.updateStatus("Ricerca linee in comune...", "info");
+    UIManager.showProgress(true, "Ricerca linee in comune...");
 
-        setTimeout(() => {
-            const startShapes = new Set();
-            APP_STATE.search.nearStartStops.forEach((item, index) => {
-                this.findShapesForStop(item.stop, startShapes);
-                UIManager.updateProgress(
-                    (index / APP_STATE.search.nearStartStops.length) * 50,
-                    `Analisi fermate partenza: ${index+1}/${APP_STATE.search.nearStartStops.length}`
-                );
-            });
+    setTimeout(() => {
+        console.log("=== INIZIO RICERCA LINEE IN COMUNE ===");
+        
+        const startShapes = new Set();
+        console.log(`Analisi ${APP_STATE.search.nearStartStops.length} fermate partenza:`);
+        APP_STATE.search.nearStartStops.forEach((item, index) => {
+            console.log(`Fermata partenza ${index+1}: ${item.stop.name} (${item.stop.id})`);
+            const shapesBefore = startShapes.size;
+            this.findShapesForStop(item.stop, startShapes);
+            console.log(`  Trovate ${startShapes.size - shapesBefore} nuove shapes per questa fermata`);
+            UIManager.updateProgress(
+                (index / APP_STATE.search.nearStartStops.length) * 50,
+                `Analisi fermate partenza: ${index+1}/${APP_STATE.search.nearStartStops.length}`
+            );
+        });
 
-            const endShapes = new Set();
-            APP_STATE.search.nearEndStops.forEach((item, index) => {
-                this.findShapesForStop(item.stop, endShapes);
-                UIManager.updateProgress(
-                    50 + (index / APP_STATE.search.nearEndStops.length) * 50,
-                    `Analisi fermate arrivo: ${index+1}/${APP_STATE.search.nearEndStops.length}`
-                );
-            });
+        const endShapes = new Set();
+        console.log(`Analisi ${APP_STATE.search.nearEndStops.length} fermate arrivo:`);
+        APP_STATE.search.nearEndStops.forEach((item, index) => {
+            console.log(`Fermata arrivo ${index+1}: ${item.stop.name} (${item.stop.id})`);
+            const shapesBefore = endShapes.size;
+            this.findShapesForStop(item.stop, endShapes);
+            console.log(`  Trovate ${endShapes.size - shapesBefore} nuove shapes per questa fermata`);
+            UIManager.updateProgress(
+                50 + (index / APP_STATE.search.nearEndStops.length) * 50,
+                `Analisi fermate arrivo: ${index+1}/${APP_STATE.search.nearEndStops.length}`
+            );
+        });
 
-            // SALVA LE SHAPES TROVATE PER PARTENZA E ARRIVO
-            APP_STATE.search.startShapes = startShapes;
-            APP_STATE.search.endShapes = endShapes;
+        // SALVA LE SHAPES TROVATE PER PARTENZA E ARRIVO
+        APP_STATE.search.startShapes = startShapes;
+        APP_STATE.search.endShapes = endShapes;
 
-            const commonShapes = new Set();
-            startShapes.forEach((shapeId) => {
-                if (endShapes.has(shapeId)) commonShapes.add(shapeId);
-            });
+        console.log(`=== RISULTATI SHAPES ===`);
+        console.log(`Shapes partenza totali: ${startShapes.size}`, Array.from(startShapes));
+        console.log(`Shapes arrivo totali: ${endShapes.size}`, Array.from(endShapes));
 
-            MapManager.layers.busLines.clearLayers();
-            APP_STATE.lines.drawnShapes.clear();
-            APP_STATE.lines.polylinesByShape = {};
-            APP_STATE.lines.polylinesByRoute = {};
-            APP_STATE.lines.polylinesByDirection = {};
+        // Trova l'intersezione tra le shapes di partenza e arrivo
+        const commonShapes = new Set();
+        startShapes.forEach((shapeId) => {
+            if (endShapes.has(shapeId)) {
+                commonShapes.add(shapeId);
+                console.log(`Shape in comune: ${shapeId}`);
+            }
+        });
 
+        console.log(`Shapes in comune totali: ${commonShapes.size}`, Array.from(commonShapes));
+
+        MapManager.layers.busLines.clearLayers();
+        APP_STATE.lines.drawnShapes.clear();
+        APP_STATE.lines.polylinesByShape = {};
+        APP_STATE.lines.polylinesByRoute = {};
+        APP_STATE.lines.polylinesByDirection = {};
+
+        if (commonShapes.size === 0) {
+            console.log("=== NESSUNA LINEA IN COMUNE TROVATA ===");
+            UIManager.updateProgress(100, "Nessuna linea in comune trovata");
+            UIManager.updateCommonLinesList({});
+            UIManager.updateStatus("Nessuna linea in comune trovata tra partenza e arrivo", "warning");
+        } else {
+            console.log("=== ANALISI TRIPS PER SHAPES IN COMUNE ===");
             const groupedRoutes = this.groupShapesByRoute(commonShapes);
             this.assignRouteColors(groupedRoutes);
             this.drawAllRoutes(groupedRoutes);
 
             UIManager.updateProgress(100, "Completato");
             UIManager.updateCommonLinesList(groupedRoutes);
+            UIManager.updateStatus(`Trovate ${Object.keys(groupedRoutes).length} linee in comune con ${commonShapes.size} segmenti`, "success");
+        }
 
-            setTimeout(() => { UIManager.showProgress(false); }, 1000);
-        }, 100);
-    },
+        console.log("=== FINE RICERCA LINEE IN COMUNE ===");
+        setTimeout(() => { UIManager.showProgress(false); }, 1000);
+    }, 100);
+},
 
 
 
@@ -134,39 +166,68 @@ clearAllLineStops: function() {
 },
 
 
-    // Trova le shape per una fermata
-    findShapesForStop: function(stop, shapesSet) {
-        for (const shapeId in APP_STATE.data.allShapes) {
-            const shapePoints = APP_STATE.data.allShapes[shapeId];
-            for (let i = 0; i < shapePoints.length; i++) {
-                const point = shapePoints[i];
-                const distance = MapManager.map.distance([stop.lat, stop.lon], [point.lat, point.lon]);
-                if (distance < CONFIG.defaults.stopProximity) {
-                    shapesSet.add(shapeId);
-                    break;
-                }
+
+// Trova le shape per una fermata
+findShapesForStop: function(stop, shapesSet) {
+    let shapesFound = 0;
+    
+    for (const shapeId in APP_STATE.data.allShapes) {
+        const shapePoints = APP_STATE.data.allShapes[shapeId];
+        let isNearShape = false;
+        
+        for (let i = 0; i < shapePoints.length; i++) {
+            const point = shapePoints[i];
+            const distance = MapManager.map.distance([stop.lat, stop.lon], [point.lat, point.lon]);
+            if (distance < CONFIG.defaults.stopProximity) {
+                isNearShape = true;
+                shapesFound++;
+                break; // Esci dal loop interno, ma continua a cercare altre shape
             }
         }
-    },
+        
+        if (isNearShape) {
+            shapesSet.add(shapeId);
+        }
+    }
+    
+    console.log(`    Fermata ${stop.name}: trovate ${shapesFound} shapes vicine`);
+},
+
 
     // Raggruppa le shape per route e direzione
-    groupShapesByRoute: function(commonShapes) {
-        const groupedRoutes = {};
+groupShapesByRoute: function(commonShapes) {
+    const groupedRoutes = {};
 
-        commonShapes.forEach((shapeId) => {
-            const trips = APP_STATE.data.allTrips[shapeId] || [];
-            trips.forEach((trip) => {
-                const routeId = trip.routeId;
-                const headsign = trip.tripHeadsign;
+    console.log(`Analisi ${commonShapes.size} shapes in comune:`);
+    
+    commonShapes.forEach((shapeId) => {
+        const trips = APP_STATE.data.allTrips[shapeId] || [];
+        
+        console.log(`Shape ${shapeId}: ${trips.length} trips associati`);
+        
+        if (trips.length === 0) {
+            console.warn(`  Shape ${shapeId} senza trips associati`);
+            return;
+        }
 
-                if (!groupedRoutes[routeId]) groupedRoutes[routeId] = {};
-                if (!groupedRoutes[routeId][headsign]) groupedRoutes[routeId][headsign] = new Set();
-                groupedRoutes[routeId][headsign].add(shapeId);
-            });
+        trips.forEach((trip, tripIndex) => {
+            const routeId = trip.routeId || 'SENZA_ROUTE_ID';
+            const headsign = trip.tripHeadsign || 'Sconosciuta';
+            const shortName = trip.tripShortName || 'SENZA_NOME';
+
+            console.log(`  Trip ${tripIndex+1}: routeId="${routeId}", shortName="${shortName}", headsign="${headsign}"`);
+
+            if (!groupedRoutes[routeId]) groupedRoutes[routeId] = {};
+            if (!groupedRoutes[routeId][headsign]) groupedRoutes[routeId][headsign] = new Set();
+            groupedRoutes[routeId][headsign].add(shapeId);
+            
+            console.log(`    Aggiunta shape ${shapeId} a route ${routeId} direzione ${headsign}`);
         });
+    });
 
-        return groupedRoutes;
-    },
+    console.log(`Raggruppate ${commonShapes.size} shapes in ${Object.keys(groupedRoutes).length} route:`, groupedRoutes);
+    return groupedRoutes;
+},
 
     // Assegna i colori alle route
     assignRouteColors: function(groupedRoutes) {

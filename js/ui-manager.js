@@ -45,11 +45,33 @@ updateStatus: function(message, type = 'info') {
         searchStartAddress: document.getElementById('search-start-address'),
         searchEndAddress: document.getElementById('search-end-address'),
         startAddressResults: document.getElementById('start-address-results'),
-        endAddressResults: document.getElementById('end-address-results')
+        endAddressResults: document.getElementById('end-address-results'),
+        downloadProgressContainer: document.getElementById('download-progress-container'),
+        downloadProgressFill: document.getElementById('download-progress-fill'),
+        downloadProgressText: document.getElementById('download-progress-text'),
+        saveLocalZip: document.getElementById('save-local-zip')
+
         };
 
         this.setupEventListeners();
     },
+
+
+// Aggiungi queste nuove funzioni per il progress download
+showDownloadProgress: function(show, text) {
+    if (show) {
+        this.elements.downloadProgressContainer.style.display = 'block';
+        this.elements.downloadProgressText.textContent = text || 'Download in corso...';
+        this.elements.downloadProgressFill.style.width = '0%';
+    } else {
+        this.elements.downloadProgressContainer.style.display = 'none';
+    }
+},
+
+updateDownloadProgress: function(percent, text) {
+    this.elements.downloadProgressFill.style.width = percent + '%';
+    if (text) this.elements.downloadProgressText.textContent = text;
+},
 
     // Configura i listener degli eventi
 
@@ -194,10 +216,25 @@ this.elements.showEndLines.addEventListener('change', (e) => {
             this.searchAddress('end');
         }
     });
+
+
+    // Pulsante salva ZIP locale
+    this.elements.saveLocalZip.addEventListener('click', () => {
+        DataLoader.saveZipLocally();
+    });    
     
     },
     
-    
+toggleSaveButton: function(enabled) {
+    if (this.elements.saveLocalZip) {
+        this.elements.saveLocalZip.disabled = !enabled;
+        if (enabled) {
+            this.elements.saveLocalZip.textContent = "Salva ZIP in locale";
+        } else {
+            this.elements.saveLocalZip.textContent = "Nessun file da salvare";
+        }
+    }
+},    
 
     // Mostra/nasconde l'indicatore di progresso
     showProgress: function(show, text) {

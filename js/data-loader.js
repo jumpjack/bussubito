@@ -1,4 +1,6 @@
 // Modulo per il caricamento e il parsing dei dati GTFS
+let downloadedBlob = null;
+
 const DataLoader = {
     // Funzione per parsare il CSV
     parseCSV: function(csvText) {
@@ -126,7 +128,10 @@ loadTripsData: function(parsedData) {
     APP_STATE.data.allTrips = {};
     let count = 0;
 
-    parsedData.data.forEach(function(trip) {
+    console.log("=== CARICAMENTO TRIPS ===");
+    console.log("Colonne trips trovate:", parsedData.headers);
+
+    parsedData.data.forEach(function(trip, index) {
         // Usa i nomi delle colonne invece delle posizioni fisse
         const routeId = trip.route_id || '';
         const serviceId = trip.service_id || '';
@@ -137,7 +142,10 @@ loadTripsData: function(parsedData) {
         const blockId = trip.block_id || '';
         const shapeId = trip.shape_id || '';
 
-        if (!shapeId) return; // Skip trips senza shape_id
+        if (!shapeId) {
+            console.warn(`Trip ${tripId} senza shape_id, skip`);
+            return; // Skip trips senza shape_id
+        }
 
         if (!APP_STATE.data.allTrips[shapeId]) {
             APP_STATE.data.allTrips[shapeId] = [];
@@ -149,10 +157,14 @@ loadTripsData: function(parsedData) {
             tripShortName: tripShortName
         });
         count++;
+
+        // Log dei primi 5 trips per debug
+        if (index < 5) {
+            console.log(`Trip esempio ${index+1}: shapeId="${shapeId}", routeId="${routeId}", shortName="${tripShortName}", headsign="${tripHeadsign}"`);
+        }
     });
 
     console.log("Caricati " + count + " trips per " + Object.keys(APP_STATE.data.allTrips).length + " shapes");
-    console.log("Colonne trips trovate:", parsedData.headers);
     return count;
 },
 
@@ -198,27 +210,120 @@ loadRoutesData: function(parsedData) {
         }
     },
 
-    // Funzione per caricare un file ZIP da URL
-    loadZipFromUrl: async function(url) {
-        try {
-            UIManager.updateStatus("Download in corso...", "info");
+// Funzione per caricare un file ZIP da URL
+loadZipFromUrl: async function(url) {
+    try {
+        UIManager.updateStatus("Download in corso...", "info");
+        UIManager.showDownloadProgress(true, "Connessione al server...");
+        UIManager.toggleSaveButton(false); // Disabilita salvataggio durante download
 
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error(`Errore HTTP: ${response.status}`);
-            }
-
-            const blob = await response.blob();
-            UIManager.updateStatus("File scaricato, elaborazione in corso...", "info");
-
-            const zip = await JSZip.loadAsync(blob);
-            await DataLoader.processZipContents(zip);
-
-        } catch (error) {
-            UIManager.updateStatus("Errore nel caricamento da URL: " + error.message, "error");
-            console.error("Errore nel caricamento da URL:", error);
+        // Costruisci l'URL del proxy
+        const proxyUrl = `https://win98.altervista.org/space/exploration/myp.php?pass=miapass&mode=native&url=${encodeURIComponent(url)}`;
+        
+        const response = await fetch(proxyUrl);
+        if (!response.ok) {
+            throw new Error(`Errore HTTP: ${response.status}`);
         }
-    },
+
+        // Ottieni la dimensione totale del file
+        const contentLength = response.headers.get('content-length');
+        const total = parseInt(contentLength, 10);
+        let loaded = 0;
+
+        const reader = response.body.getReader();
+        const chunks = [];
+
+        while (true) {
+            const { done, value } = await reader.read();
+            
+            if (done) break;
+            
+            chunks.push(value);
+            loaded += value.length;
+            
+            // Aggiorna il progresso
+            if (total) {
+                const percent = Math.round((loaded / total) * 100);
+                UIManager.updateDownloadProgress(percent, `Download: ${this.formatBytes(loaded)} / ${this.formatBytes(total)}`);
+            } else {
+                UIManager.updateDownloadProgress(0, `Download: ${this.formatBytes(loaded)}`);
+            }
+        }
+
+        // Crea il blob da tutti i chunk
+        downloadedBlob = new Blob(chunks);
+        UIManager.updateDownloadProgress(100, "Download completato, elaborazione in corso...");
+        
+        UIManager.updateStatus("File scaricato, elaborazione in corso...", "info");
+
+        const zip = await JSZip.loadAsync(downloadedBlob);
+        await DataLoader.processZipContents(zip);
+        
+        UIManager.showDownloadProgress(false);
+        UIManager.toggleSaveButton(true); // Abilita salvataggio dopo elaborazione
+
+    } catch (error) {
+        UIManager.showDownloadProgress(false);
+        UIManager.toggleSaveButton(false);
+        UIManager.updateStatus("Errore nel caricamento da URL: " + error.message, "error");
+        console.error("Errore nel caricamento da URL:", error);
+    }
+},
+
+// Aggiungi funzione per salvare il file localmente
+saveZipLocally: function() {
+    if (!downloadedBlob) {
+        UIManager.updateStatus("Nessun file da salvare", "warning");
+        return;
+    }
+
+    try {
+        // Crea un URL per il blob
+        const blobUrl = URL.createObjectURL(downloadedBlob);
+        
+        // Crea un link per il download
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        
+        // Estrai il nome file dall'URL o usa un nome di default
+        const url = UIManager.elements.remoteZipUrl.value.trim();
+        let fileName = 'gtfs_data.zip';
+        if (url) {
+            const urlParts = url.split('/');
+            const lastPart = urlParts[urlParts.length - 1];
+            if (lastPart && lastPart.endsWith('.zip')) {
+                fileName = lastPart;
+            }
+        }
+        
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        // Rilascia l'URL
+        URL.revokeObjectURL(blobUrl);
+        
+        UIManager.updateStatus(`File salvato come: ${fileName}`, "success");
+        
+    } catch (error) {
+        UIManager.updateStatus("Errore nel salvataggio del file: " + error.message, "error");
+        console.error("Errore nel salvataggio:", error);
+    }
+},
+
+// Funzione helper per formattare i byte
+formatBytes: function(bytes, decimals = 2) {
+    if (bytes === 0) return '0 Bytes';
+    
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+},
 
     // Funzione per processare i contenuti del file ZIP
     processZipContents: async function(zip) {
