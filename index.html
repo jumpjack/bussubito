@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mappa Fermate - Caricamento ZIP</title>
+    <title>Mappa Fermate GTFS</title>
 
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -12,111 +12,119 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <div id="header">
+        <h1>Mappa Fermate GTFS</h1>
+        <p>Carica un file ZIP GTFS per visualizzare le linee di trasporto</p>
+    </div>
 
     <div id="map-container">
-        <div id="sidebar">
-
-
-            <div id="data-controls">
-                <div class="file-input-group">
-                    <label for="zip-file-input">File ZIP GTFS (locale):</label>
-                    <input type="file" id="zip-file-input" accept=".zip">
-                </div>
-
-            <div class="file-input-group">
-                <label for="remote-zip-url">Carica da URL:</label>
-                <input type="text" id="remote-zip-url" placeholder="https://esempio.com/dati.zip" 
-                       value="https://dati.comune.roma.it/catalog/dataset/a7dadb4a-66ae-4eff-8ded-a102064702ba/resource/266d82e1-ba53-4510-8a81-370880c4678f/download/rome_static_gtfs.zip">
-                <button id="load-remote-zip">Carica da URL</button>
-            </div>
-<div>
-<a href="https://dati.comune.roma.it/catalog/dataset/a7dadb4a-66ae-4eff-8ded-a102064702ba/resource/266d82e1-ba53-4510-8a81-370880c4678f/download/rome_static_gtfs.zip">ROMA.zip</a>
-</div>            
-            <div class="progress-container" id="download-progress-container" style="display: none;">
-                <div class="progress-bar">
-                    <div class="progress-fill" id="download-progress-fill"></div>
-                </div>
-                <div class="progress-text" id="download-progress-text">Download in corso...</div>
-            </div>                
-
-<div class="file-input-group">
-    <button id="save-local-zip" class="save-btn">Salva ZIP in locale</button>
-</div>
-
-<div id="search-address-controls">
-    <h3 class="section-title">Cerca Indirizzi</h3>
-    
-    <div class="address-search-group">
-        <label for="start-address">Partenza:</label>
-        <div class="search-input-container">
-            <input type="text" id="start-address" placeholder="Inserisci indirizzo di partenza">
-            <button id="search-start-address" class="address-search-btn">Cerca</button>
-        </div>
-        <div id="start-address-results" class="address-results"></div>
-    </div>
-
-    <div class="address-search-group">
-        <label for="end-address">Arrivo:</label>
-        <div class="search-input-container">
-            <input type="text" id="end-address" placeholder="Inserisci indirizzo di arrivo">
-            <button id="search-end-address" class="address-search-btn">Cerca</button>
-        </div>
-        <div id="end-address-results" class="address-results"></div>
-    </div>
-</div>
-
-            <div class="progress-container" id="progress-container">
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progress-fill"></div>
-                </div>
-                <div class="progress-text" id="progress-text">Elaborazione in corso...</div>
-            </div>
-
-<div id="unified-status" class="unified-status">
-    <span id="status-text">Pronto - Carica un file ZIP GTFS per iniziare</span>
-</div>
-
-<div id="search-controls">
-    <h3 class="section-title">Impostazioni</h3>
-    <div id="radius-control">
-        <span>Raggio:</span>
-        <input type="range" id="radius-slider" min="50" max="1000" value="100" step="50">
-        <span id="radius-value">100 m</span>
-    </div>
-    <div id="line-width-control">
-        <span>Spessore linee:</span>
-        <input type="range" id="line-width-slider" min="1" max="10" value="5" step="1">
-        <span id="line-width-value">5 px</span>
-    </div>
-
-    <!-- Aggiungi questi controlli -->
-    <div class="checkbox-group">
-        <input type="checkbox" id="show-start-lines">
-        <label for="show-start-lines">Mostra linee che passano per PARTENZA</label>
-    </div>
-    <div class="checkbox-group">
-        <input type="checkbox" id="show-end-lines">
-        <label for="show-end-lines">Mostra linee che passano per ARRIVO</label>
-    </div>
-
-</div>
-<div id="action-controls">
-    <button id="search-button" class="search-btn">CERCA</button>
-    <button id="reset-button" class="reset-btn">RESET</button>
-</div>
-
-            <div id="search-info">
-                <div id="search-results">Nessuna ricerca effettuata</div>
-            </div>
-
-            <div id="common-lines">
-                <h3 class="section-title">Linee in Comune</h3>
-                <div id="common-lines-list">Nessuna linea trovata</div>
-            </div>
-        </div>
-
-</div>
         <div id="map"></div>
+        
+        <div id="sidebar">
+            <!-- Controlli compressi -->
+            <div id="compact-controls">
+                <!-- Caricamento dati -->
+                <div class="control-section">
+                    <h3>Dati GTFS</h3>
+                    <div class="file-input-group">
+                        <input type="file" id="zip-file-input" accept=".zip">
+                    </div>
+                    <div class="file-input-group">
+                        <input type="text" id="remote-zip-url" placeholder="URL file ZIP" 
+                               value="https://dati.comune.roma.it/catalog/dataset/a7dadb4a-66ae-4eff-8ded-a102064702ba/resource/266d82e1-ba53-4510-8a81-370880c4678f/download/rome_static_gtfs.zip">
+                        <button id="load-remote-zip">Carica URL</button>
+                    </div>
+                    <div class="progress-container" id="download-progress-container" style="display: none;">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="download-progress-fill"></div>
+                        </div>
+                        <div class="progress-text" id="download-progress-text">Download in corso...</div>
+                    </div>
+                    <button id="save-local-zip" class="save-btn" disabled>Salva ZIP</button>
+                </div>
+
+                <!-- Ricerca indirizzi -->
+                <div class="control-section">
+                    <h3>Cerca Indirizzi</h3>
+                    <div class="address-search-group">
+                        <label>Partenza:</label>
+                        <div class="search-input-container">
+                            <input type="text" id="start-address" placeholder="Indirizzo partenza">
+                            <button id="search-start-address" class="address-search-btn">🔍</button>
+                        </div>
+                        <div id="start-address-results" class="address-results"></div>
+                    </div>
+
+                    <div class="address-search-group">
+                        <label>Arrivo:</label>
+                        <div class="search-input-container">
+                            <input type="text" id="end-address" placeholder="Indirizzo arrivo">
+                            <button id="search-end-address" class="address-search-btn">🔍</button>
+                        </div>
+                        <div id="end-address-results" class="address-results"></div>
+                    </div>
+                </div>
+
+                <!-- Impostazioni -->
+                <div class="control-section">
+                    <h3>Impostazioni</h3>
+                    <div class="compact-control">
+                        <label>Raggio:</label>
+                        <div class="slider-container">
+                            <input type="range" id="radius-slider" min="50" max="1000" value="100" step="50">
+                            <span id="radius-value">100 m</span>
+                        </div>
+                    </div>
+                    <div class="compact-control">
+                        <label>Spessore:</label>
+                        <div class="slider-container">
+                            <input type="range" id="line-width-slider" min="1" max="10" value="5" step="1">
+                            <span id="line-width-value">5 px</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Azioni -->
+                <div class="control-section">
+                    <h3>Azioni</h3>
+                    <div id="action-buttons">
+                        <button id="search-button" class="action-btn search">CERCA</button>
+                        <button id="reset-button" class="action-btn reset">RESET</button>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="show-start-lines">
+                        <label for="show-start-lines">Linee PARTENZA</label>
+                        <input type="checkbox" id="show-end-lines">
+                        <label for="show-end-lines">Linee ARRIVO</label>
+                    </div>
+                </div>
+
+                <!-- Stato e risultati -->
+                <div class="control-section">
+                    <div id="unified-status" class="unified-status">
+                        <span id="status-text">Carica un file GTFS per iniziare</span>
+                    </div>
+                    <div id="search-results">Nessuna ricerca</div>
+                </div>
+
+                <!-- Progress bar per elaborazione -->
+                <div class="progress-container" id="progress-container" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    <div class="progress-text" id="progress-text">Elaborazione in corso...</div>
+                </div>
+            </div>
+
+            <!-- Linee in comune (espandibile) -->
+            <div id="results-section">
+                <div class="section-header">
+                    <h3>Linee Trovate</h3>
+                    <button id="toggle-results" class="toggle-btn">▼</button>
+                </div>
+                <div id="common-lines-list" class="collapsible-content">Nessuna linea trovata</div>
+            </div>
+        </div>
     </div>
 
     <!-- Libraries -->
