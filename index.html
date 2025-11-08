@@ -23,12 +23,26 @@
                     <input type="file" id="zip-file-input" accept=".zip">
                 </div>
 
-                <div class="file-input-group">
-                    <label for="remote-zip-url">Oppure carica da URL:</label>
-                    <input type="text" id="remote-zip-url" placeholder="https://esempio.com/dati.zip">
-                    <button id="load-remote-zip">Carica da URL</button>
-                </div>
+            <div class="file-input-group">
+                <label for="remote-zip-url">Carica da URL:</label>
+                <input type="text" id="remote-zip-url" placeholder="https://esempio.com/dati.zip" 
+                       value="https://dati.comune.roma.it/catalog/dataset/a7dadb4a-66ae-4eff-8ded-a102064702ba/resource/266d82e1-ba53-4510-8a81-370880c4678f/download/rome_static_gtfs.zip">
+                <button id="load-remote-zip">Carica da URL</button>
             </div>
+<div>
+<a href="https://dati.comune.roma.it/catalog/dataset/a7dadb4a-66ae-4eff-8ded-a102064702ba/resource/266d82e1-ba53-4510-8a81-370880c4678f/download/rome_static_gtfs.zip">ROMA.zip</a>
+</div>            
+            <div class="progress-container" id="download-progress-container" style="display: none;">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="download-progress-fill"></div>
+                </div>
+                <div class="progress-text" id="download-progress-text">Download in corso...</div>
+            </div>                
+
+<div class="file-input-group">
+    <button id="save-local-zip" class="save-btn">Salva ZIP in locale</button>
+</div>
+
 <div id="search-address-controls">
     <h3 class="section-title">Cerca Indirizzi</h3>
     
@@ -101,6 +115,7 @@
             </div>
         </div>
 
+</div>
         <div id="map"></div>
     </div>
 
